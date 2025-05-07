@@ -5,7 +5,7 @@ const CarFilter = ({ searchTerm, onSearchChange, selectedBrand, onBrandChange, s
   return (
     <div className="bg-white p-4 rounded-lg shadow mb-6">
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 flex items-center justify-between">
+            <div className="flex-1 flex items-center justify-between">
           <div className="flex-1 flex gap-4">
             <input
               type="text"

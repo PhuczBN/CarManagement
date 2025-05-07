@@ -1,8 +1,18 @@
 import React from 'react';
-import { ChevronLeft, Car, Users, ShoppingBag, UserCircle, LogOut } from 'lucide-react';
+import { ChevronLeft, Car, Users, ShoppingBag, UserCircle, Calendar, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import NavItem from './NavItem';
 
 const Sidebar = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   const navItems = [
     { 
       id: 'dashboard', 
@@ -23,6 +33,7 @@ const Sidebar = () => {
     { id: 'customers', to: '/customers', title: 'Quản Lý Khách Hàng', icon: <Users className="w-6 h-6" /> },
     { id: 'sales', to: '/sales', title: 'Quản Lý Bán Hàng', icon: <ShoppingBag className="w-6 h-6" /> },
     { id: 'employees', to: '/employees', title: 'Quản Lý Nhân Viên', icon: <UserCircle className="w-6 h-6" /> },
+    { id: 'appointments', to: '/appointments', title: 'Quản Lý Lịch Hẹn', icon: <Calendar className="w-6 h-6" /> },
   ];
 
   return (
@@ -52,7 +63,10 @@ const Sidebar = () => {
       </nav>
       
       <div className="border-t border-blue-800">
-        <div className="p-4 flex items-center space-x-3 hover:bg-blue-800 cursor-pointer transition-colors">
+        <div 
+          onClick={handleLogout}
+          className="p-4 flex items-center space-x-3 hover:bg-blue-800 cursor-pointer transition-colors"
+        >
           <LogOut className="w-6 h-6" />
           <span>Đăng Xuất</span>
         </div>

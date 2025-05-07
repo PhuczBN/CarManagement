@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { formatPrice, formatPhoneNumber } from '../utils/formatters';
 import { carData } from '../data/carData';
 import { customerData } from '../data/customerData';
@@ -8,10 +8,42 @@ import { employeeData } from '../data/employeeData';
 const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
-  const [cars, setCars] = useState(carData);
-  const [customers, setCustomers] = useState(customerData);
+  // Khởi tạo state từ localStorage hoặc dữ liệu mặc định
+  const [cars, setCars] = useState(() => {
+    const savedCars = localStorage.getItem('cars');
+    return savedCars ? JSON.parse(savedCars) : carData;
+  });
+  const [customers, setCustomers] = useState(() => {
+    const savedCustomers = localStorage.getItem('customers');
+    return savedCustomers ? JSON.parse(savedCustomers) : customerData;
+  });
   const [sales, setSales] = useState(salesData);
   const [employees, setEmployees] = useState(employeeData);
+  const [favorites, setFavorites] = useState(() => {
+    const savedFavorites = localStorage.getItem('favorites');
+    return savedFavorites ? JSON.parse(savedFavorites) : [];
+  });
+  const [appointments, setAppointments] = useState(() => {
+    const savedAppointments = localStorage.getItem('appointments');
+    return savedAppointments ? JSON.parse(savedAppointments) : [];
+  });
+
+  // Lưu cars vào localStorage khi có thay đổi
+  useEffect(() => {
+    localStorage.setItem('cars', JSON.stringify(cars));
+  }, [cars]);
+
+  useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  useEffect(() => {
+    localStorage.setItem('appointments', JSON.stringify(appointments));
+  }, [appointments]);
+
+  useEffect(() => {
+    localStorage.setItem('customers', JSON.stringify(customers));
+  }, [customers]);
 
   const addCar = (newCar) => {
     const formattedCar = {
@@ -119,12 +151,91 @@ export const DataProvider = ({ children }) => {
     setEmployees(prevEmployees => prevEmployees.filter(emp => emp.id !== employeeId));
   };
 
+  const toggleFavorite = (carId) => {
+    setFavorites(prev => {
+      if (prev.includes(carId)) {
+        return prev.filter(id => id !== carId);
+      } else {
+        return [...prev, carId];
+      }
+    });
+  };
+
+  const addAppointment = (newAppointment) => {
+    console.log('Adding new appointment:', newAppointment); // Để debug
+    setAppointments(prevAppointments => {
+      const updatedAppointments = [...prevAppointments, newAppointment];
+      // Lưu vào localStorage ngay lập tức
+      localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
+      return updatedAppointments;
+    });
+  };
+
+  const addAppointmentAndCustomer = (formData) => {
+    // Tạo appointment mới với status
+    const newAppointment = {
+      id: Date.now(),
+      ...formData,
+      status: 'Chờ xác nhận',
+      createdAt: new Date().toISOString()
+    };
+
+    // Lưu appointment vào state và localStorage
+    setAppointments(prev => {
+      const updatedAppointments = [...prev, newAppointment];
+      localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
+      return updatedAppointments;
+    });
+
+    // Kiểm tra và cập nhật thông tin khách hàng
+    const existingCustomer = customers.find(c => c.phone === formData.phone);
+    if (!existingCustomer) {
+      const newCustomer = {
+        id: Date.now(),
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        appointments: 1,
+        joinDate: new Date().toISOString(),
+        purchased: 0
+      };
+      setCustomers(prev => {
+        const updatedCustomers = [...prev, newCustomer];
+        localStorage.setItem('customers', JSON.stringify(updatedCustomers));
+        return updatedCustomers;
+      });
+    } else {
+      setCustomers(prev => {
+        const updatedCustomers = prev.map(customer =>
+          customer.id === existingCustomer.id
+            ? { ...customer, appointments: customer.appointments + 1 }
+            : customer
+        );
+        localStorage.setItem('customers', JSON.stringify(updatedCustomers));
+        return updatedCustomers;
+      });
+    }
+  };
+
+  const updateAppointmentStatus = (appointmentId, newStatus) => {
+    setAppointments(prevAppointments => 
+      prevAppointments.map(appointment => 
+        appointment.id === appointmentId 
+          ? { ...appointment, status: newStatus }
+          : appointment
+      )
+    );
+  };
+
   return (
     <DataContext.Provider value={{
       cars, setCars, addCar, updateCar, deleteCar,
       customers, setCustomers, addCustomer, updateCustomer, deleteCustomer,
       sales, setSales, addSale, updateSale, deleteSale,
-      employees, setEmployees, addEmployee, updateEmployee, deleteEmployee
+      employees, setEmployees, addEmployee, updateEmployee, deleteEmployee,
+      favorites, toggleFavorite,
+      appointments, setAppointments, addAppointment, updateAppointmentStatus,
+      addAppointmentAndCustomer
     }}>
       {children}
     </DataContext.Provider>
